@@ -1076,11 +1076,10 @@ export async function embed(texts: string[], opts?: EmbedOpts): Promise<Float32A
   const maxBatchTokens = embedding?.max_batch_tokens;
   const charsPerToken = embedding?.chars_per_token ?? DEFAULT_CHARS_PER_TOKEN;
 
-  // Pre-split is gated on max_batch_tokens. Recipes without it (e.g. OpenAI)
-  // ride the fast path: one embedMany call, no recursion safety net.
-  const batches = maxBatchTokens
+  const tokenBatches = maxBatchTokens
     ? splitByTokenBudget(truncated, Math.floor(maxBatchTokens * effectiveSafetyFactor(recipe)), charsPerToken)
     : [truncated];
+  const batches = splitByItemCap(tokenBatches, embedding?.max_batch_items);
 
   const allEmbeddings: Float32Array[] = [];
 
@@ -1128,6 +1127,17 @@ export function splitByTokenBudget(
   if (current.length > 0) batches.push(current);
 
   return batches;
+}
+
+function splitByItemCap(batches: string[][], maxItems?: number): string[][] {
+  if (!maxItems || maxItems <= 0) return batches;
+  const capped: string[][] = [];
+  for (const batch of batches) {
+    for (let i = 0; i < batch.length; i += maxItems) {
+      capped.push(batch.slice(i, i + maxItems));
+    }
+  }
+  return capped;
 }
 
 /**

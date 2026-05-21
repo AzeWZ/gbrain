@@ -49,6 +49,7 @@ describe('recipe: dashscope', () => {
   test('declares chars_per_token + max_batch_tokens for safer batching', () => {
     const r = getRecipe('dashscope')!;
     expect(r.touchpoints.embedding!.max_batch_tokens).toBeGreaterThan(0);
+    expect(r.touchpoints.embedding!.max_batch_items).toBe(10);
     expect(r.touchpoints.embedding!.chars_per_token).toBeGreaterThan(0);
   });
 
